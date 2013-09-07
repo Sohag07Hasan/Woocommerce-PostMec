@@ -1,11 +1,15 @@
 <?php 
-	$start_time = get_post_meta($post->ID, 'start_time', true);
-	$end_time = get_post_meta($post->ID, 'end_time', true);
+	
+	$start_time = $postmec->events->get_event_start_time($post->ID);
+	$end_time = $postmec->events->get_event_end_time($post->ID);
+	
+	$start_time = empty($start_time) ? '' : date("Y-m-d g.i A", $start_time);
+	$end_time = empty($end_time) ? '' : date("Y-m-d g.i A", $end_time);
 ?>
 
 <div>
 	
-	<p>Staring: <input type="text" name="start_time" value="<?php echo date("m/d/Y", $start_time); ?>" /> </p>
-	<p>Ending: <input type="text" name="end_time" value="<?php echo date("m/d/Y", $end_time); ?>" /> </p>
+	<p>Staring: <input placeholder="yyyy-mm-dd 6.30 PM" type="text" name="start_time" value="<?php echo $start_time ?>" /> </p>
+	<p>Ending: <input placeholder="yyyy-mm-dd 5.05 AM" type="text" name="end_time" value="<?php echo $end_time ?>" /> </p>
 	
 </div>

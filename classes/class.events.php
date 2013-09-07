@@ -14,6 +14,13 @@ class PostMecEvents{
 		add_action('add_meta_boxes', array(&$this, 'add_meta_boxes'));
 		add_action('save_post', array(get_class(), 'save_meta_info'), 10, 2);
 		//add_filter('post_type_link', array($this, 'my_post_type_link_filter_function', 1, 3));
+		
+		//add sub menu page to manage stores
+		add_action('admin_menu', array(&$this, 'admin_menu'), 100);
+		
+		//add scritps to handle stores
+		add_action('admin_enqueue_scripts', array(&$this, 'admin_enqueue_script'));
+		
 	}
 	
 	function get_posts($args = array()){
@@ -23,24 +30,48 @@ class PostMecEvents{
 	}
 	
 	function get_query($args = array()){
-		$args['post_type'] = $this->post_type;				
+		$args['post_type'] = $this->post_type;
+		
+		if(isset($args['orderby'])){
+			if($args['orderby'] == 'end'){
+				$args['orderby'] = 'meta_value';
+				$args['meta_key'] = '_end_time';
+				$args['order'] = 'ASC';
+			}
+		}
+		
 		$query = new WP_Query($args);		
 		return $query;
 	}
 	
 	
 	function add_meta_boxes(){
-		add_meta_box('event_start_end_defining', 'Starting and Ending', array($this, 'metabox_date_time'), $this->post_type, 'side', 'high');
+		add_meta_box('event_start_end_defining', 'Event Start and End', array($this, 'metabox_date_time'), $this->post_type, 'side', 'high');
+		add_meta_box('event_vendor_selector', 'Select a Store', array($this, 'metabox_store'), $this->post_type, 'side', 'high');
 	}	
 	
+	
+	//startup date and ending date selector
 	function metabox_date_time($post){
 		global $postmec;
 		include $postmec->get_postmec_dir() . 'metaboxes/event_start_end_defining.php';
 	}
 	
+	
+	//shop selector like (Victoria's fasions, 6PM etc)
+	function metabox_store($post){
+		global $postmec;
+		include $postmec->get_postmec_dir() . 'metaboxes/metabox.store.php';
+	}
+	
+	
 	function save_meta_info($post_id, $post){
-		if(isset($_POST['start_time'])) update_post_meta($post_id, 'start_time', strtotime($_POST['start_time']));
-		if(isset($_POST['end_time'])) update_post_meta($post_id, 'end_time', strtotime($_POST['end_time']));
+		//date and time		
+		if(isset($_POST['start_time'])) update_post_meta($post_id, '_start_time', strtotime($_POST['start_time']));
+		if(isset($_POST['end_time'])) update_post_meta($post_id, '_end_time', strtotime($_POST['end_time']));
+		
+		//store info
+		if(isset($_POST['store'])) update_post_meta($post_id, '_store', $_POST['store']);
 	}
 	
 	
@@ -84,6 +115,7 @@ class PostMecEvents{
 		)
 					
 		);
+				
 	}
 	
 	//un used
@@ -97,6 +129,68 @@ class PostMecEvents{
 		}
 		
 		return $post_link;
+	}
+	
+	
+	//get event start time
+	function get_event_start_time($post_id){
+		return get_post_meta($post_id, '_start_time', true);		
+	}
+	
+	
+	//get event ending time
+	function get_event_end_time($post_id){
+		return get_post_meta($post_id, '_end_time', true);
+	}
+	
+	
+	//get the store of the event
+	function get_associated_store($post_id){
+		return get_post_meta($post_id, '_store', true);
+	}
+	
+	
+	//add a submenu page
+	function admin_menu(){
+		add_submenu_page('edit.php?post_type=event', 'Store Management', 'Stores', 'manage_woocommerce', 'stores-management', array(&$this, 'store_management'));
+	}
+	
+	
+	//submneu page content
+	function store_management(){
+		global $postmec;
+		include $postmec->get_postmec_dir() . 'menu-submenu/submenu.stores.php';
+	}
+	
+	//enqueue scripts to use default logo uploader
+	function admin_enqueue_script(){
+		global $postmec;
+		
+		if($_GET['page'] == 'stores-management'){
+			wp_enqueue_script('jquery');
+			wp_enqueue_style( 'thickbox' ); // Stylesheet used by Thickbox
+			wp_enqueue_script( 'thickbox' );
+			wp_enqueue_script( 'media-upload' );
+			wp_register_script('store-media-upload', $postmec->get_postmec_url() . 'js/plugin.media-uploader.js', array('jquery', 'thickbox', 'media-upload'));
+			wp_enqueue_script('store-media-upload');
+		
+			//wp_register_script('media-uploader-activator', $commentbar->get_this_url() . 'js/uploader.activator.js', array('jquery'));
+			//wp_enqueue_script('media-uploader-activator');
+		}
+	}
+	
+	
+	//save the store logo
+	function save_store_logo($logo = array()){
+		update_option('stores_logo', $logo);		
+	}
+	
+	
+	//get the store logo
+	function get_store_logo($store = ''){
+		$logo = get_option('stores_logo');		
+		return isset($logo[$store]) ? $logo[$store] : '';
+		
 	}
 	
 }

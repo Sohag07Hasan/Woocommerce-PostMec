@@ -14,7 +14,29 @@ class PostMecEventsProductsRelationship{
 		add_action('woocommerce_page_title', array($this, 'woocommerce_page_title'));
 		
 		add_action('woocommerce_before_single_product', array($this, 'woocommerce_before_single_product'), 0);
+		
+		add_action('woocommerce_before_shop_loop', array($this, 'woocommerce_event_description'), 0);
+		
+		//changing the template for shop page
+		add_filter('template_include', array(&$this, 'change_page_template'));
 	}
+	
+	//change the page template of shop page
+	function change_page_template($template){
+		
+		//var_dump($template);
+		
+		if(is_shop() && !isset($_GET['event_id'])){
+			$template_dir = get_template_directory();				
+			$template = $template_dir . '/tpl-shopping.php';
+			include $template; 
+			exit;			
+		}	
+	
+		
+		return $template;
+	}
+	
 	
 	function pre_get_posts($q){
 		
@@ -29,7 +51,15 @@ class PostMecEventsProductsRelationship{
 		}
 		
 	}
-		
+
+	
+	function woocommerce_event_description(){
+		if(isset($_GET['event_id']) && $_GET['event_id'] > 0){
+			get_template_part('event', 'header');
+		}
+	}
+	
+	
 	
 	function add_meta_boxes(){
 		add_meta_box('Eventlists', 'Events', array($this, 'metabox_eventlists'), 'product', 'side', 'high');
@@ -90,22 +120,26 @@ class PostMecEventsProductsRelationship{
 						
 			$url = add_query_arg(array('event_id' => $ultimate['event_id']), $url);
 			?>
-				<p class="refereral_url">
-					<a href="<?php echo $url; ?>">
-						Back to The Event
-					</a>
-				</p>
+				<div class="header-home-msg header-events header-events-title">
+					<div class="container">
+						<span class="refereral_url">
+							<a href="<?php echo $url; ?>">&laquo; Back to The Event</a>
+						</span>
+					</div>
+				</div>
 			<?php 
 		}
 		
 		else{
 			$url = $shop_page_url = get_permalink(woocommerce_get_page_id( 'shop' ));
 			?>
-				<p class="refereral_url">
-					<a href="<?php echo $url; ?>">
-						Back to The Event
-					</a>
-				</p>
+				<div class="header-home-msg header-events header-events-title">
+					<div class="container">
+						<span class="refereral_url">
+							<a href="<?php echo $url; ?>">&laquo; Back to The Event</a>
+						</span>
+					</div>
+				</div>
 			<?php 
 		}
 		
